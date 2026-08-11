@@ -138,6 +138,22 @@
   .song-status{ color: var(--rose); font-size: 0.8rem; margin-bottom: 1rem; font-style: italic; }
   audio{ width: 100%; margin-top: 0.5rem; }
 
+  .song-controls{
+    display: flex; align-items: center; justify-content: center;
+    gap: 1rem; margin-top: 1.4rem;
+  }
+  .ctrl-btn{
+    background: transparent; border: 1px solid var(--line); color: var(--cream);
+    border-radius: 50%; width: 44px; height: 44px; font-size: 1.1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s ease, background 0.2s ease;
+  }
+  .ctrl-btn:hover{ background: var(--deep); transform: scale(1.06); }
+  .ctrl-main{
+    width: 54px; height: 54px; font-size: 1.3rem;
+    background: var(--deep); border-color: var(--deep);
+  }
+
   .media-box{
     position: relative; padding-bottom: 177.7%; height: 0; overflow: hidden;
     border-radius: 3px; border: 1px solid var(--line); background: #0a0e18;
@@ -254,6 +270,11 @@
     <div class="song-title display">I Got Love</div>
     <div class="song-artist">Miyagi &amp; Endspiel</div>
     <div class="song-status" id="songStatus">şarkı başlıyor...</div>
+    <div class="song-controls">
+      <button class="ctrl-btn" id="prevBtn" aria-label="önceki">⏮</button>
+      <button class="ctrl-btn ctrl-main" id="playPauseBtn" aria-label="oynat/duraklat">⏸</button>
+      <button class="ctrl-btn" id="nextBtn" aria-label="sonraki">⏭</button>
+    </div>
     <audio id="bgSong" src="igotlove.mp3" preload="auto"></audio>
   </div>
 </section>
@@ -405,63 +426,51 @@
   let songIndex = 0;
 
   // ---- sarki: ikinci evete basinca (gercek kullanici etkilesimi) otomatik baslar ----
+  const audioEl = document.getElementById('bgSong');
+  const statusEl = document.getElementById('songStatus');
+  const vinylEl = document.getElementById('vinyl');
+  const titleEl = document.querySelector('.song-title');
+  const artistEl = document.querySelector('.song-artist');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function loadSong(index, autoplay){
+    songIndex = (index + playlist.length) % playlist.length;
+    audioEl.src = playlist[songIndex].src;
+    titleEl.textContent = playlist[songIndex].title;
+    artistEl.textContent = playlist[songIndex].artist;
+    if(autoplay){
+      audioEl.play().catch(()=>{ statusEl.textContent = 'oynat tuşuna bas'; });
+    }
+  }
+
+  playPauseBtn.addEventListener('click', ()=>{
+    if(audioEl.paused){ audioEl.play(); } else { audioEl.pause(); }
+  });
+  prevBtn.addEventListener('click', ()=> loadSong(songIndex - 1, true));
+  nextBtn.addEventListener('click', ()=> loadSong(songIndex + 1, true));
+
+  audioEl.addEventListener('play', ()=>{
+    vinylEl.classList.add('spin');
+    statusEl.textContent = 'çalıyor 🎵';
+    playPauseBtn.textContent = '⏸';
+  });
+  audioEl.addEventListener('pause', ()=>{
+    vinylEl.classList.remove('spin');
+    playPauseBtn.textContent = '▶';
+  });
+  audioEl.addEventListener('ended', ()=> loadSong(songIndex + 1, true));
+
   function startSong(){
-    const audio = document.getElementById('bgSong');
-    const status = document.getElementById('songStatus');
-    const vinyl = document.getElementById('vinyl');
-    const titleEl = document.querySelector('.song-title');
-    const artistEl = document.querySelector('.song-artist');
-
-    audio.addEventListener('play', ()=>{ vinyl.classList.add('spin'); status.textContent='çalıyor 🎵'; });
-    audio.addEventListener('pause', ()=>{ vinyl.classList.remove('spin'); });
-    audio.addEventListener('ended', ()=>{
-      songIndex = (songIndex + 1) % playlist.length;
-      audio.src = playlist[songIndex].src;
-      titleEl.textContent = playlist[songIndex].title;
-      artistEl.textContent = playlist[songIndex].artist;
-      audio.play();
-    });
-
-    audio.play().then(()=>{
-      status.textContent = 'çalıyor 🎵';
-      vinyl.classList.add('spin');
+    audioEl.play().then(()=>{
+      statusEl.textContent = 'çalıyor 🎵';
+      vinylEl.classList.add('spin');
     }).catch(()=>{
-      status.textContent = 'başlatmak için aşağıdaki oynat tuşuna bas';
+      statusEl.textContent = 'başlatmak için aşağıdaki oynat tuşuna bas';
     });
   }
 
   // ---- video: dokununca oynat ----
   function makePlayable(boxId){
-    const box = document.getElementById(boxId);
-    if(!box) return;
-    box.addEventListener('click', function(){
-      const vid = box.getAttribute('data-video');
-      box.innerHTML = '<iframe src="https://www.youtube.com/embed/' + vid + '?autoplay=1&playsinline=1" ' +
-        'title="video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
-    }, { once: true });
-  }
-  makePlayable('videoBox');
-
-  // ---- canli sayac ----
-  const start1 = new Date("2026-07-25T21:44:00");
-  function pad(n){ return String(n).padStart(2,'0'); }
-  function updateCounter(start, prefix){
-    const now = new Date();
-    let diff = Math.max(0, now - start);
-    const d = Math.floor(diff / 86400000); diff -= d*86400000;
-    const h = Math.floor(diff / 3600000); diff -= h*3600000;
-    const m = Math.floor(diff / 60000); diff -= m*60000;
-    const s = Math.floor(diff / 1000);
-    document.getElementById(prefix+'-d').textContent = d;
-    document.getElementById(prefix+'-h').textContent = pad(h);
-    document.getElementById(prefix+'-m').textContent = pad(m);
-    document.getElementById(prefix+'-s').textContent = pad(s);
-  }
-  function tick(){ updateCounter(start1, 'c1'); }
-  tick();
-  setInterval(tick, 1000);
-</script>
-
-</body>
-  </html>
-      
+    const 
