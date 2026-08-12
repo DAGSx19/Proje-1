@@ -352,6 +352,7 @@
     const btnEvet = document.querySelector('[data-evet="'+id+'"]');
     const btnHayir = document.querySelector('[data-hayir="'+id+'"]');
     const teaseEl = document.querySelector('[data-tease="'+id+'"]');
+    if(!playArea || !btnEvet || !btnHayir || !teaseEl) return;
     let dodging = false;
 
     function randomPos(){
@@ -359,8 +360,8 @@
       const areaH = playArea.clientHeight;
       const btnW = btnHayir.offsetWidth || 140;
       const btnH = btnHayir.offsetHeight || 50;
-      const x = Math.random() * (areaW - btnW);
-      const y = Math.random() * (areaH - btnH);
+      const x = Math.random() * Math.max(areaW - btnW, 10);
+      const y = Math.random() * Math.max(areaH - btnH, 10);
       return {x, y};
     }
 
@@ -373,40 +374,37 @@
       btnHayir.style.transform = 'none';
       teaseEl.textContent = teases[Math.floor(Math.random()*teases.length)];
       spawnHearts(6);
-      setTimeout(()=>{ dodging = false; }, 260);
+      setTimeout(()=>{ dodging = false; }, 220);
     }
 
-    function distToBtn(px, py){
-      const rect = btnHayir.getBoundingClientRect();
-      const areaRect = playArea.getBoundingClientRect();
-      const bx = rect.left - areaRect.left + rect.width/2;
-      const by = rect.top - areaRect.top + rect.height/2;
-      return Math.hypot(px - bx, py - by);
-    }
-
-    playArea.addEventListener('mousemove', (e)=>{
-      const areaRect = playArea.getBoundingClientRect();
-      const px = e.clientX - areaRect.left;
-      const py = e.clientY - areaRect.top;
-      if(distToBtn(px, py) < 90) dodge();
-    });
-    playArea.addEventListener('touchmove', (e)=>{
-      const t = e.touches[0];
-      const areaRect = playArea.getBoundingClientRect();
-      const px = t.clientX - areaRect.left;
-      const py = t.clientY - areaRect.top;
-      if(distToBtn(px, py) < 100) dodge();
-    }, {passive:true});
-
+    // masaustu: fare Hayir'a yaklasinca kacar
     btnHayir.addEventListener('mouseenter', dodge);
-    btnHayir.addEventListener('click', (e)=>{ e.preventDefault(); dodge(); });
-    btnHayir.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodge(); });
+    // mobil: Hayir'a dokununca kacar (sadece kendi uzerinde, tum alani dinlemiyoruz)
+    btnHayir.addEventListener('touchstart', function(e){
+      e.preventDefault();
+      dodge();
+    }, {passive:false});
+    btnHayir.addEventListener('click', function(e){
+      e.preventDefault();
+      dodge();
+    });
 
-    btnEvet.addEventListener('click', ()=>{
+    btnEvet.addEventListener('click', function(){
       btnEvet.classList.add('grown');
       spawnHearts(30);
       setTimeout(onEvet, 550);
     });
+    // mobilde bazi tarayicilarda touchend sonrasi click gecikebiliyor,
+    // touchend'i de dogrudan dinleyip cift tetiklemeyi engelliyoruz
+    let evetTouched = false;
+    btnEvet.addEventListener('touchend', function(e){
+      if(evetTouched) return;
+      evetTouched = true;
+      e.preventDefault();
+      btnEvet.classList.add('grown');
+      spawnHearts(30);
+      setTimeout(onEvet, 550);
+    }, {passive:false});
   }
 
   setupQuestion('1', ()=>{ goTo(q2); });
@@ -445,22 +443,22 @@
     }
   }
 
-  playPauseBtn.addEventListener('click', ()=>{
+  playPauseBtn && playPauseBtn.addEventListener('click', ()=>{
     if(audioEl.paused){ audioEl.play(); } else { audioEl.pause(); }
   });
-  prevBtn.addEventListener('click', ()=> loadSong(songIndex - 1, true));
-  nextBtn.addEventListener('click', ()=> loadSong(songIndex + 1, true));
+  prevBtn && prevBtn.addEventListener('click', ()=> loadSong(songIndex - 1, true));
+  nextBtn && nextBtn.addEventListener('click', ()=> loadSong(songIndex + 1, true));
 
-  audioEl.addEventListener('play', ()=>{
+  audioEl && audioEl.addEventListener('play', ()=>{
     vinylEl.classList.add('spin');
     statusEl.textContent = 'çalıyor 🎵';
-    playPauseBtn.textContent = '⏸';
+    playPauseBtn && (playPauseBtn.textContent = '⏸');
   });
-  audioEl.addEventListener('pause', ()=>{
+  audioEl && audioEl.addEventListener('pause', ()=>{
     vinylEl.classList.remove('spin');
-    playPauseBtn.textContent = '▶';
+    playPauseBtn && (playPauseBtn.textContent = '▶');
   });
-  audioEl.addEventListener('ended', ()=> loadSong(songIndex + 1, true));
+  audioEl && audioEl.addEventListener('ended', ()=> loadSong(songIndex + 1, true));
 
   function startSong(){
     audioEl.play().then(()=>{
@@ -473,4 +471,4 @@
 
   // ---- video: dokununca oynat ----
   function makePlayable(boxId){
-    const 
+    const box = document.getElementByI
